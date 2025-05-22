@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<!-- Helps with Swagger documentation -->
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Core ASP.NET Packages -->
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.11" />
+
+		<!-- Entity Framework Core Packages -->
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.*" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.*">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.*">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.*" />
+
+		<!-- Swagger/OpenAPI Packages -->
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.5.0" />
+
+		<!-- Validation Packages -->
+		<PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+	</ItemGroup>
+
+</Project>
