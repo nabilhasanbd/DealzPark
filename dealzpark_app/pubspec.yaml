@@ -17,6 +17,7 @@ dependencies:
   intl: ^0.19.0           # For date formatting
   flutter_staggered_grid_view: ^0.7.0 # For a more dynamic grid layout (optional, but nice for deals)
   #cupertino_icons: ^1.0.2 # Already there
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

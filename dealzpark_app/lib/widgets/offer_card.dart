@@ -12,103 +12,190 @@ class OfferCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final DateFormat formatter = DateFormat('MMM dd, yyyy');
     final bool isExpired = DateTime.now().isAfter(offer.validTo);
+    // Placeholder for original price - you'd need this from your API
+    // final double originalPrice = offer.discountPercentage > 0 ? (100 * (offer.currentPrice ?? 50)) / (100 - offer.discountPercentage) : (offer.currentPrice ?? 50);
+    // final double savings = originalPrice - (offer.currentPrice ?? 50);
+
 
     return Card(
-      elevation: 4.0,
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      elevation: 3.0,
+      margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      clipBehavior: Clip.antiAlias, // Important for rounded corners on Stack children
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-      child: Opacity(
-        opacity: isExpired ? 0.5 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
+      child: InkWell(
+        onTap: isExpired
+            ? null
+            : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => OfferDetailScreen(offer: offer),
+                  ),
+                );
+              },
+        child: Opacity(
+          opacity: isExpired ? 0.6 : 1.0,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Stack(
                 children: [
-                  Text(
-                    offer.shopName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
-                    ),
+                  // --- Image ---
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: (offer.promotionalImageUrl != null &&
+                            offer.promotionalImageUrl!.isNotEmpty)
+                        ? Image.network(
+                            offer.promotionalImageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                    child: Icon(Icons.broken_image,
+                                        size: 50, color: Colors.grey)),
+                              );
+                            },
+                          )
+                        : Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Text('Image Not Available',
+                                  style: TextStyle(color: Colors.grey)),
+                            ),
+                          ),
                   ),
+                  // --- Discount Badge ---
                   if (offer.discountPercentage > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${offer.discountPercentage}% OFF',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error, // Use error color for discount
+                          borderRadius: BorderRadius.circular(20),
+                           boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: Offset(0, 1),
+                            )
+                          ]
+                        ),
+                        child: Text(
+                          '${offer.discountPercentage}% OFF',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              if (offer.promotionalImageUrl != null && offer.promotionalImageUrl!.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: Image.network(
-                    offer.promotionalImageUrl!, // Assuming full URL from API
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        height: 150,
-                        color: Colors.grey[300],
-                        child: const Center(child: Icon(Icons.image_not_supported, size: 50)),
-                      );
-                    },
-                  ),
-                )
-              else
-                Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: const Center(
-                    child: Text('Image Not Available', style: TextStyle(color: Colors.grey)),
-                  ),
-                ),
-              const SizedBox(height: 12),
-              Text(
-                offer.promotionalTitle,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                isExpired ? 'Expired on: ${formatter.format(offer.validTo.toLocal())}' : 'Valid until: ${formatter.format(offer.validTo.toLocal())}',
-                style: TextStyle(fontSize: 12, color: isExpired ? Colors.red : Colors.grey[600]),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).primaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text('Details'),
-                  onPressed: isExpired ? null : () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => OfferDetailScreen(offer: offer),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- Shop Name & Category (Optional) ---
+                    Text(
+                      offer.shopName.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[600],
+                        letterSpacing: 0.5,
                       ),
-                    );
-                  },
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    // --- Promotional Title ---
+                    Text(
+                      offer.promotionalTitle,
+                      style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          height: 1.3),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // --- Validity & "Bought" count (Placeholder for bought) ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isExpired
+                              ? 'Expired: ${formatter.format(offer.validTo.toLocal())}'
+                              : 'Ends: ${formatter.format(offer.validTo.toLocal())}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: isExpired
+                                  ? Colors.red.shade700
+                                  : Colors.green.shade700),
+                        ),
+                        // Placeholder for "bought" count - you'd need this from your API
+                        // Text(
+                        //   '${Random().nextInt(500) + 50} bought', // Example
+                        //   style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                        // ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // --- Price Info (Placeholder) & Details Button ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end, // Align button to the right
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Placeholder for Price
+                        // Column(
+                        //   crossAxisAlignment: CrossAxisAlignment.start,
+                        //   children: [
+                        //     Text(
+                        //       '\$${(offer.currentPrice ?? 50).toStringAsFixed(2)}', // Replace with actual current price
+                        //       style: TextStyle(
+                        //         fontSize: 18,
+                        //         fontWeight: FontWeight.bold,
+                        //         color: Theme.of(context).primaryColor,
+                        //       ),
+                        //     ),
+                        //     if (offer.discountPercentage > 0)
+                        //       Text(
+                        //         '\$${originalPrice.toStringAsFixed(2)}',
+                        //         style: TextStyle(
+                        //           fontSize: 13,
+                        //           color: Colors.grey[500],
+                        //           decoration: TextDecoration.lineThrough,
+                        //         ),
+                        //       ),
+                        //   ],
+                        // ),
+                        // const Spacer(), // Pushes button to the right if price is shown
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.secondary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            textStyle: const TextStyle(fontWeight: FontWeight.bold)
+                          ),
+                          onPressed: isExpired ? null : () {
+                             Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => OfferDetailScreen(offer: offer),
+                                ),
+                              );
+                          },
+                          child: const Text('View Deal'),
+                        ),
+                      ],
+                    )
+                  ],
                 ),
               ),
             ],
