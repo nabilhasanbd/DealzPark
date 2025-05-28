@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/offer_provider.dart';
 import '../widgets/offer_card.dart';
-import 'categories_screen.dart'; // Import the new screen
+import 'categories_screen.dart';
 import 'shop_registration_screen.dart';
 import 'add_offer_screen.dart';
 
-// Placeholder screens for other tabs
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Notifications")),
+    appBar: AppBar(title: const Text("Notifications")), // This AppBar will still show "Notifications"
     body: const Center(child: Text('Notifications Screen')),
   );
 }
@@ -20,7 +19,7 @@ class SavedScreen extends StatelessWidget {
   const SavedScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Saved Deals")),
+    appBar: AppBar(title: const Text("Saved Deals")), // This AppBar will still show "Saved Deals"
     body: const Center(child: Text('Saved Deals Screen')),
   );
 }
@@ -29,7 +28,7 @@ class MyStuffScreen extends StatelessWidget {
   const MyStuffScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("My Stuff / Profile")),
+    appBar: AppBar(title: const Text("My Stuff / Profile")), // This AppBar will still show "My Stuff / Profile"
     body: const Center(child: Text('My Stuff Screen')),
   );
 }
@@ -45,19 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
 
-  // No need to initialize _pages in initState with widget instances
-  // that call Provider.of directly with the _HomeScreenState's context.
-
   @override
   void initState() {
     super.initState();
-    // Initial offer loading is handled by OfferProvider's constructor.
-    // Or, if it needed context and had to be one-time, you might use:
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (mounted) { // Good practice to check if mounted
-    //     Provider.of<OfferProvider>(context, listen: false).loadOffers(category: 'All');
-    //   }
-    // });
+    // Initial offer loading is handled by OfferProvider's constructor or didChangeDependencies if needed.
   }
 
   @override
@@ -67,13 +57,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onTabTapped(int index) {
-    // Prevent unnecessary rebuilds or actions if the same tab is tapped
     if (_currentIndex == index) {
-        if (index == 0) { // If featured tab is tapped again, refresh
-            final offerProvider = Provider.of<OfferProvider>(context, listen: false);
-            offerProvider.loadOffers(category: offerProvider.selectedCategory);
-        }
-        return; // Do nothing further if it's the same tab
+      if (index == 0) { // If featured tab is tapped again, refresh
+        final offerProvider = Provider.of<OfferProvider>(context, listen: false);
+        offerProvider.loadOffers(category: offerProvider.selectedCategory);
+      }
+      return;
     }
 
     setState(() {
@@ -87,11 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // This method builds the content FOR the Featured Page.
-  // It receives a 'pageContext' from a Builder widget.
   Widget _buildFeaturedPageContent(BuildContext pageContext) {
-    // Use pageContext here, which is the build context for this specific page content.
-    final offerProvider = Provider.of<OfferProvider>(pageContext); // listen: true is default
+    final offerProvider = Provider.of<OfferProvider>(pageContext);
 
     return Column(
       children: <Widget>[
@@ -137,12 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Define the pages list INSIDE the build method.
-    // This ensures that when _buildFeaturedPageContent is part of the list,
-    // its eventual call to Provider.of uses a context that is ready.
     final List<Widget> pages = [
-      // Wrap the content builder for the featured page in a Builder
-      // to get a fresh context when it's actually built by PageView.
       Builder(builder: (pageContext) => _buildFeaturedPageContent(pageContext)),
       const CategoriesScreen(),
       const NotificationsScreen(),
@@ -152,18 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _currentIndex == 0 ? 'DealzPark - Featured'
-              : _currentIndex == 1 ? 'Categories'
-              : _currentIndex == 2 ? 'Notifications'
-              : _currentIndex == 3 ? 'Saved Deals'
-              : 'My Stuff',
-          // style will be inherited from theme
-        ),
-        // backgroundColor and elevation will be inherited from theme
+        title: const Text('DealzPark'), // <--- MODIFIED HERE: Always "DealzPark"
+        // backgroundColor, elevation, textStyle, iconTheme will be inherited from main.dart's appBarTheme
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_1_outlined), // color from theme
+            icon: const Icon(Icons.person_add_alt_1_outlined), // color will be inherited
             tooltip: 'Register Shop',
             onPressed: () {
               Navigator.of(context).push(
@@ -177,14 +151,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: PageView(
         controller: _pageController,
-        children: pages, // Use the pages list defined above
+        children: pages,
         onPageChanged: (index) {
           if (_currentIndex != index) {
             setState(() {
               _currentIndex = index;
             });
-            // If swiped TO the Featured tab
-            if (index == 0) {
+            if (index == 0) { // Swiped TO the Featured tab
               final offerProvider = Provider.of<OfferProvider>(context, listen: false);
               offerProvider.loadOffers(category: offerProvider.selectedCategory);
             }
@@ -194,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        // Other properties will be inherited from theme
+        // type, selectedItemColor, unselectedItemColor will be inherited from main.dart's bottomNavigationBarTheme
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.star_outline),
@@ -229,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.of(context)
                     .push(MaterialPageRoute(builder: (context) => const AddOfferScreen()))
                     .then((value) {
-                  if (value == true) { // Offer was successfully added
+                  if (value == true) {
                     final offerProvider = Provider.of<OfferProvider>(context, listen: false);
                     offerProvider.loadOffers(category: offerProvider.selectedCategory);
                   }

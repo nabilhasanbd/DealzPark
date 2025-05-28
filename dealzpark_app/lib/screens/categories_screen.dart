@@ -38,17 +38,6 @@ class CategoriesScreen extends StatelessWidget {
             onTap: () {
               // Set the category in the provider AND trigger a fetch
               offerProvider.selectCategoryAndFetch(category);
-
-              // Optional: If this screen is part of a PageView in HomeScreen,
-              // you might want to switch back to the "Featured" tab.
-              // This depends on how you structure your HomeScreen's PageView.
-              // For now, we assume the user stays on this screen or navigates
-              // back manually if it's pushed as a separate route.
-              // If it's a tab, the home screen's offer list will update automatically.
-
-              // If you want to pop this screen and show the deals for the selected category:
-              // Navigator.of(context).pop(); // This would require HomeScreen's PageController to switch to index 0
-
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Showing deals for $category')),
               );
