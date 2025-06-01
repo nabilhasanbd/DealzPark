@@ -16,5 +16,17 @@
         <member name="M:DealzParkApi.Migrations.InitialCreate.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
             <inheritdoc />
         </member>
+        <member name="T:DealzParkApi.Migrations.AddCategoryTableAndMakeOfferCategoryString">
+            <inheritdoc />
+        </member>
+        <member name="M:DealzParkApi.Migrations.AddCategoryTableAndMakeOfferCategoryString.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DealzParkApi.Migrations.AddCategoryTableAndMakeOfferCategoryString.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:DealzParkApi.Migrations.AddCategoryTableAndMakeOfferCategoryString.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
     </members>
 </doc>

@@ -1,4 +1,3 @@
-// In DTOs/OfferCreationDto.cs
 using System.ComponentModel.DataAnnotations;
 using DealzParkApi.Models;
 
@@ -24,7 +23,7 @@ public class OfferCreationDto
 	public DateTime ValidTo { get; set; }
 
 	[Required]
-	public OfferCategory Category { get; set; }
+	public string Category { get; set; }
 
 	[Required]
 	public int ShopId { get; set; }

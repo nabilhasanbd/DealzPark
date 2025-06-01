@@ -9,28 +9,25 @@ import 'add_offer_screen.dart';
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({Key? key}) : super(key: key);
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Notifications")), // This AppBar will still show "Notifications"
-    body: const Center(child: Text('Notifications Screen')),
-  );
+  Widget build(BuildContext context) {
+    return Center(child: Text('Notifications'));
+  }
 }
 
 class SavedScreen extends StatelessWidget {
   const SavedScreen({Key? key}) : super(key: key);
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("Saved Deals")), // This AppBar will still show "Saved Deals"
-    body: const Center(child: Text('Saved Deals Screen')),
-  );
+  Widget build(BuildContext context) {
+    return Center(child: Text('Saved'));
+  }
 }
 
 class MyStuffScreen extends StatelessWidget {
   const MyStuffScreen({Key? key}) : super(key: key);
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text("My Stuff / Profile")), // This AppBar will still show "My Stuff / Profile"
-    body: const Center(child: Text('My Stuff Screen')),
-  );
+  Widget build(BuildContext context) {
+    return Center(child: Text('My Stuff'));
+  }
 }
 
 class HomeScreen extends StatefulWidget {
@@ -45,22 +42,17 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
 
   @override
-  void initState() {
-    super.initState();
-    // Initial offer loading is handled by OfferProvider's constructor or didChangeDependencies if needed.
-  }
-
-  @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
 
   void _onTabTapped(int index) {
+    if (!mounted) return;
     if (_currentIndex == index) {
-      if (index == 0) { // If featured tab is tapped again, refresh
+      if (index == 0) {
         final offerProvider = Provider.of<OfferProvider>(context, listen: false);
-        offerProvider.loadOffers(category: offerProvider.selectedCategory);
+        offerProvider.loadOffers(category: offerProvider.selectedCategoryName);
       }
       return;
     }
@@ -70,9 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _pageController.jumpToPage(index);
 
-    if (index == 0) { // Switched TO the Featured tab
+    if (index == 0) {
       final offerProvider = Provider.of<OfferProvider>(context, listen: false);
-      offerProvider.loadOffers(category: offerProvider.selectedCategory);
+      offerProvider.loadOffers(category: offerProvider.selectedCategoryName);
     }
   }
 
@@ -89,27 +81,26 @@ class _HomeScreenState extends State<HomeScreen> {
               hintText: 'Search deals (e.g. Pizza, Spa)',
               hintStyle: TextStyle(color: Colors.grey[500]),
               prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
-              // Other decoration properties will be inherited from the theme
             ),
-            onChanged: (value) { /* Implement search logic */ },
+            onChanged: (value) {},
           ),
         ),
         Expanded(
-          child: offerProvider.isLoading
+          child: offerProvider.isLoadingOffers
               ? const Center(child: CircularProgressIndicator())
               : offerProvider.offers.isEmpty
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Text(
-                          'No deals found for "${offerProvider.selectedCategory}".\nSelect a category or check back later!',
+                          'No deals found for "${offerProvider.selectedCategoryName}".\nSelect a category or check back later!',
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 16, color: Colors.grey),
                         ),
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: () => offerProvider.loadOffers(category: offerProvider.selectedCategory),
+                      onRefresh: () => offerProvider.loadOffers(category: offerProvider.selectedCategoryName),
                       child: ListView.builder(
                         padding: const EdgeInsets.only(top: 4.0, bottom: 70.0),
                         itemCount: offerProvider.offers.length,
@@ -133,11 +124,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DealzPark'), // <--- MODIFIED HERE: Always "DealzPark"
-        // backgroundColor, elevation, textStyle, iconTheme will be inherited from main.dart's appBarTheme
+        title: const Text('DealzPark'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_1_outlined), // color will be inherited
+            icon: const Icon(Icons.person_add_alt_1_outlined),
             tooltip: 'Register Shop',
             onPressed: () {
               Navigator.of(context).push(
@@ -153,13 +143,14 @@ class _HomeScreenState extends State<HomeScreen> {
         controller: _pageController,
         children: pages,
         onPageChanged: (index) {
+          if (!mounted) return;
           if (_currentIndex != index) {
             setState(() {
               _currentIndex = index;
             });
-            if (index == 0) { // Swiped TO the Featured tab
+            if (index == 0) {
               final offerProvider = Provider.of<OfferProvider>(context, listen: false);
-              offerProvider.loadOffers(category: offerProvider.selectedCategory);
+              offerProvider.loadOffers(category: offerProvider.selectedCategoryName);
             }
           }
         },
@@ -167,33 +158,12 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        // type, selectedItemColor, unselectedItemColor will be inherited from main.dart's bottomNavigationBarTheme
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star_outline),
-            activeIcon: Icon(Icons.star),
-            label: 'Featured',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.grid_view_outlined),
-            activeIcon: Icon(Icons.grid_view_rounded),
-            label: 'Categories',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Notifications',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border_outlined),
-            activeIcon: Icon(Icons.favorite),
-            label: 'Saved',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'My Stuff',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Categories'),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Notifications'),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Saved'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'My Stuff'),
         ],
       ),
       floatingActionButton: _currentIndex == 0
@@ -204,13 +174,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     .then((value) {
                   if (value == true) {
                     final offerProvider = Provider.of<OfferProvider>(context, listen: false);
-                    offerProvider.loadOffers(category: offerProvider.selectedCategory);
+                    offerProvider.loadOffers(category: offerProvider.selectedCategoryName);
                   }
                 });
               },
               label: const Text('Add Offer'),
               icon: const Icon(Icons.add),
-              // backgroundColor from theme
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,

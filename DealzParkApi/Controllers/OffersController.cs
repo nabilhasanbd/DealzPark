@@ -4,6 +4,9 @@ using DealzParkApi.Data;
 using DealzParkApi.Models;
 using DealzParkApi.DTOs;
 using Swashbuckle.AspNetCore.Annotations;
+// Remove if you're not using authentication yet
+// using Microsoft.AspNetCore.Authorization;
+// using System.Security.Claims;
 
 namespace DealzParkApi.Controllers
 {
@@ -18,13 +21,13 @@ namespace DealzParkApi.Controllers
             _context = context;
         }
 
-        // ... (CreateOffer and GetOffer methods remain the same) ...
-
         [HttpPost]
-        [SwaggerOperation(Summary = "Creates a new offer")]
+        // [Authorize] // Uncomment if you add authentication back
+        [SwaggerOperation(Summary = "Creates a new offer")] // Add (Authentication Required) if authorized
         [ProducesResponseType(typeof(OfferResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        // [ProducesResponseType(StatusCodes.Status401Unauthorized)] // Uncomment if authorized
         public async Task<ActionResult<OfferResponseDto>> CreateOffer(OfferCreationDto offerDto)
         {
             if (!ModelState.IsValid)
@@ -32,11 +35,33 @@ namespace DealzParkApi.Controllers
                 return BadRequest(ModelState);
             }
 
+            // --- VALIDATE CATEGORY (ensure it exists in your Categories table) ---
+            var categoryEntity = await _context.Categories
+                                        .FirstOrDefaultAsync(c => c.Name.ToLower() == offerDto.Category.ToLower());
+            if (categoryEntity == null)
+            {
+                return BadRequest($"Category '{offerDto.Category}' does not exist. Please create it first or choose an existing one.");
+            }
+            // --- END VALIDATE CATEGORY ---
+
+            // If using authentication and want to link user:
+            // var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // if (userId == null)
+            // {
+            //     return Unauthorized("User identifier not found in token. Please login again.");
+            // }
+
             var shop = await _context.Shops.FindAsync(offerDto.ShopId);
             if (shop == null)
             {
                 return NotFound($"Shop with ID {offerDto.ShopId} not found.");
             }
+
+            // Optional: Shop ownership check if using authentication
+            // if (shop.OwnerUserId != userId) // Assuming Shop has OwnerUserId
+            // {
+            //     return Forbid("You do not have permission to add offers to this shop.");
+            // }
 
             var offer = new Offer
             {
@@ -44,11 +69,12 @@ namespace DealzParkApi.Controllers
                 PromotionalImageUrl = offerDto.PromotionalImageUrl,
                 DiscountPercentage = offerDto.DiscountPercentage,
                 ProductImageUrl = offerDto.ProductImageUrl,
-                ValidFrom = offerDto.ValidFrom.ToUniversalTime(), // Store in UTC
-                ValidTo = offerDto.ValidTo.ToUniversalTime(),     // Store in UTC
-                Category = offerDto.Category,
+                ValidFrom = offerDto.ValidFrom.ToUniversalTime(),
+                ValidTo = offerDto.ValidTo.ToUniversalTime(),
+                Category = categoryEntity.Name, // Use the validated category name (ensures consistent casing from DB)
                 ShopId = offerDto.ShopId,
                 CreatedAt = DateTime.UtcNow
+                // CreatorUserId = userId, // If using authentication
             };
 
             _context.Offers.Add(offer);
@@ -64,7 +90,7 @@ namespace DealzParkApi.Controllers
                 ValidFrom = offer.ValidFrom,
                 ValidTo = offer.ValidTo,
                 CreatedAt = offer.CreatedAt,
-                Category = offer.Category.ToString(),
+                Category = offer.Category, // offer.Category is already a string
                 ShopId = offer.ShopId,
                 ShopName = shop.ShopName
             };
@@ -79,10 +105,10 @@ namespace DealzParkApi.Controllers
         public async Task<ActionResult<OfferResponseDto>> GetOffer(int id)
         {
             var offer = await _context.Offers
-                                      .Include(o => o.Shop) // Include shop details
+                                      .Include(o => o.Shop)
                                       .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (offer == null || offer.Shop == null) // Ensure shop is also not null if it's crucial for the DTO
+            if (offer == null || offer.Shop == null)
             {
                 return NotFound();
             }
@@ -97,38 +123,38 @@ namespace DealzParkApi.Controllers
                 ValidFrom = offer.ValidFrom,
                 ValidTo = offer.ValidTo,
                 CreatedAt = offer.CreatedAt,
-                Category = offer.Category.ToString(),
+                Category = offer.Category, // offer.Category is already a string
                 ShopId = offer.ShopId,
-                ShopName = offer.Shop.ShopName // Safe now due to the check above
+                ShopName = offer.Shop.ShopName
             };
 
             return responseDto;
         }
 
-
         [HttpGet]
         [SwaggerOperation(Summary = "Gets all offers, sorted by latest and highest discount")]
         [ProducesResponseType(typeof(IEnumerable<OfferResponseDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<OfferResponseDto>>> GetAllOffers(
-            [FromQuery] string? category = null)
+            [FromQuery] string? category = null) // category parameter is a string
         {
             var query = _context.Offers.Include(o => o.Shop).AsQueryable();
 
             // Filter by category if provided
-            if (!string.IsNullOrEmpty(category) && Enum.TryParse<OfferCategory>(category, true, out var offerCategory))
+            if (!string.IsNullOrEmpty(category) && category.Trim().ToLower() != "all") // Check for "all" explicitly
             {
-                query = query.Where(o => o.Category == offerCategory);
+                // Case-insensitive comparison for the category name string
+                string lowerCategory = category.Trim().ToLower();
+                query = query.Where(o => o.Category.ToLower() == lowerCategory);
             }
 
-            // Filter out expired offers - THIS LINE IS REMOVED/COMMENTED OUT
+            // Date validation removed to show all offers as per your previous request
             // var currentDate = DateTime.UtcNow;
             // query = query.Where(o => o.ValidTo >= currentDate);
-
 
             var offers = await query
                 .OrderByDescending(o => o.CreatedAt)       // Latest first
                 .ThenByDescending(o => o.DiscountPercentage) // Then highest discount
-                .Select(offer => new OfferResponseDto // Project to DTO
+                .Select(offer => new OfferResponseDto
                 {
                     Id = offer.Id,
                     PromotionalTitle = offer.PromotionalTitle,
@@ -138,7 +164,7 @@ namespace DealzParkApi.Controllers
                     ValidFrom = offer.ValidFrom,
                     ValidTo = offer.ValidTo,
                     CreatedAt = offer.CreatedAt,
-                    Category = offer.Category.ToString(),
+                    Category = offer.Category, // offer.Category is already a string
                     ShopId = offer.ShopId,
                     ShopName = offer.Shop != null ? offer.Shop.ShopName : "N/A"
                 })

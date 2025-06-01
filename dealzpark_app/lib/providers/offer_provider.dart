@@ -1,57 +1,92 @@
 import 'package:flutter/material.dart';
 import '../models/offer.dart';
+import '../models/category_model.dart';
 import '../services/api_service.dart';
 
 class OfferProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
-  List<Offer> _offers = []; // All offers fetched for the current view
-  // List<Offer> _filteredOffers = []; // We might not need this if we refetch on category change
-  bool _isLoading = false;
-  String _selectedCategory = 'All'; // Default category, or initially null then set
+  
+  List<Offer> _offers = [];
+  bool _isLoadingOffers = false;
+  String _selectedCategoryName = 'All';
 
-  List<Offer> get offers => _offers; // Directly return _offers
-  bool get isLoading => _isLoading;
-  String get selectedCategory => _selectedCategory;
+  List<CategoryModel> _allApiCategories = [];
+  bool _isLoadingCategories = false;
 
-  // Categories list for the CategoriesScreen and potentially for other uses
-  final List<String> allCategories = [
-    'All', 'Fashion', 'Electronics', 'Food', 'Sports', 'Travel', 'Services', 'Other'
-  ];
+  List<Offer> get offers => _offers;
+  bool get isLoadingOffers => _isLoadingOffers;
+  String get selectedCategoryName => _selectedCategoryName;
+
+  List<CategoryModel> get allApiCategories => _allApiCategories;
+  bool get isLoadingCategories => _isLoadingCategories;
+
+  List<String> get categoryNamesForDropdown =>
+      _allApiCategories.map((c) => c.name).toList();
+
+  List<String> get displayCategoriesList {
+    final names = _allApiCategories.map((c) => c.name).toList();
+    if (!names.map((n) => n.toLowerCase()).contains('all')) {
+      return ['All', ...names];
+    }
+    return names;
+  }
 
   OfferProvider() {
-    // Load "All" offers initially when the provider is created for the home screen
-    loadOffers(category: 'All');
+    initializeData();
+  }
+
+  Future<void> initializeData() async {
+    await fetchAllCategories();
+    await loadOffers(category: _selectedCategoryName);
+  }
+
+  Future<void> fetchAllCategories() async {
+    _isLoadingCategories = true;
+    notifyListeners();
+    try {
+      _allApiCategories = await _apiService.fetchCategories();
+      _allApiCategories.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    } catch (e) {
+      print("Error fetching categories: $e");
+      _allApiCategories = [];
+    }
+    _isLoadingCategories = false;
+    notifyListeners();
+  }
+
+  Future<void> addCategory(String name) async {
+    try {
+      await _apiService.createCategory(name);
+      await fetchAllCategories();
+    } catch (e) {
+      print("Error adding category: $e");
+      throw e;
+    }
   }
 
   Future<void> loadOffers({String? category, bool forceApiCall = false}) async {
-    // If category is null or "All", we fetch all.
-    // If a specific category is provided, we fetch for that category.
     final categoryToFetch = (category == null || category.toLowerCase() == 'all') ? null : category;
 
-    // Only update selectedCategory if a new one is explicitly passed
-    // (e.g., from CategoriesScreen or if we had top filters)
     if (category != null) {
-      _selectedCategory = category;
+      _selectedCategoryName = category;
     }
-    
-    _isLoading = true;
-    notifyListeners(); // Notify UI that loading has started
+
+    _isLoadingOffers = true;
+    notifyListeners();
 
     try {
       _offers = await _apiService.fetchOffers(category: categoryToFetch);
     } catch (e) {
-      print(e);
-      _offers = []; // Clear offers on error
+      print("Error fetching offers: $e");
+      _offers = [];
     }
-    _isLoading = false;
-    notifyListeners(); // Notify UI that data is loaded or loading failed
+
+    _isLoadingOffers = false;
+    notifyListeners();
   }
 
-  // This method will be called from the CategoriesScreen when a category is tapped
-  void selectCategoryAndFetch(String category) {
-    _selectedCategory = category;
-    // We always want to fetch from API when category changes from CategoriesScreen
-    loadOffers(category: category, forceApiCall: true);
-    notifyListeners(); // Ensure UI updates if selectedCategory is observed elsewhere
+  void selectCategoryAndFetch(String categoryName) {
+    _selectedCategoryName = categoryName;
+    loadOffers(category: categoryName, forceApiCall: true);
   }
 }

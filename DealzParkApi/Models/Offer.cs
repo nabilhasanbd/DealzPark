@@ -3,17 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DealzParkApi.Models
 {
-    public enum OfferCategory
-    {
-        Fashion,
-        Electronics,
-        Food,
-        Sports,
-        Travel,
-        Services,
-        Other
-    }
-
+    
     public class Offer
     {
         public int Id { get; set; }
@@ -38,7 +28,8 @@ namespace DealzParkApi.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]
-        public OfferCategory Category { get; set; }
+        [MaxLength(100)]
+        public string Category { get; set; }
 
         // Foreign Key for Shop
         public int ShopId { get; set; }

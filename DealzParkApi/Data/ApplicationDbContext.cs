@@ -12,6 +12,7 @@ namespace DealzParkApi.Data
 
         public DbSet<Shop> Shops { get; set; }
         public DbSet<Offer> Offers { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,6 +28,13 @@ namespace DealzParkApi.Data
             modelBuilder.Entity<Offer>()
                 .Property(o => o.Category)
                 .HasConversion<string>(); // Store enum as string
+
+            modelBuilder.Entity<Category>().HasData(
+                new Category { Id = 1, Name = "Fashion", CreatedAt = DateTime.UtcNow },
+                new Category { Id = 2, Name = "Electronics", CreatedAt = DateTime.UtcNow },
+                new Category { Id = 3, Name = "Food", CreatedAt = DateTime.UtcNow },
+                new Category { Id = 4, Name = "Sports", CreatedAt = DateTime.UtcNow }
+            );
         }
     }
 }

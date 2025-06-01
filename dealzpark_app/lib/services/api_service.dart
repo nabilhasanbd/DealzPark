@@ -2,17 +2,16 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/offer.dart';
 import '../models/shop.dart'; // For ShopRegistrationData
+import '../models/category_model.dart';
 import 'dart:io' show Platform; // For platform-specific base URL
 
 class ApiService {
-  // For Android emulator, 10.0.2.2 points to host machine's localhost
-  // For iOS simulator or physical device, use your machine's local IP address
-  // Make sure your .NET API is running and accessible.
+
   static String get baseUrl {
   if (Platform.isAndroid) {
-    return 'http://10.0.2.2:5015/api'; // Use the correct port (5015)
+    return 'http://10.0.2.2:5015/api'; 
   } else {
-    return 'http://localhost:5015/api'; // Use the correct port (5015)
+    return 'http://localhost:5015/api'; 
   }
 }
 
@@ -24,15 +23,8 @@ class ApiService {
     }
 
     try {
-      // For HTTPS with self-signed certs in dev, you might need to bypass certificate checks.
-      // This is NOT recommended for production.
-      // final client = HttpClient();
-      // client.badCertificateCallback = ((X509Certificate cert, String host, int port) => true);
-      // final ioClient = IOClient(client);
-      // final response = await ioClient.get(Uri.parse(url));
 
       final response = await http.get(Uri.parse(url));
-
 
       if (response.statusCode == 200) {
         List<dynamic> body = jsonDecode(response.body);
@@ -107,6 +99,79 @@ class ApiService {
       return shops;
     } else {
       throw Exception('Failed to load shops');
+    }
+  }
+
+  Future<List<CategoryModel>> fetchCategories() async {
+    final response = await http.get(Uri.parse('$baseUrl/Categories'));
+    print('ApiService: Fetching categories from URL: $baseUrl/Categories');
+    print('ApiService: Categories Response status: ${response.statusCode}');
+    print('ApiService: Categories Response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      List<dynamic> body = jsonDecode(response.body);
+      List<CategoryModel> categories =
+          body.map((dynamic item) => CategoryModel.fromJson(item)).toList();
+      return categories;
+    } else {
+      throw Exception('Failed to load categories: ${response.statusCode}');
+    }
+  }
+
+  Future<CategoryModel> createCategory(String name) async {
+    final String url = '$baseUrl/Categories';
+    print('ApiService: Creating category at URL: $url with name: $name');
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8', // CORRECT CHARSET
+        },
+        body: jsonEncode(<String, String>{ // Ensure the body matches your DTO
+          'name': name,
+        }),
+      );
+
+      print('ApiService: Create Category Response Status: ${response.statusCode}');
+      print('ApiService: Create Category Response Body: ${response.body}');
+
+      if (response.statusCode == 201) { // 201 Created
+        // Assuming your API returns the created category object in the body
+        return CategoryModel.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 400) {
+        // Try to parse error message if API provides one
+        String errorMessage = 'Failed to create category: Bad Request';
+        try {
+          var decodedError = jsonDecode(response.body);
+          if (decodedError is Map && decodedError.containsKey('message')) {
+            errorMessage = decodedError['message'];
+          } else if (decodedError is String) {
+            errorMessage = decodedError;
+          } else if (decodedError is Map && decodedError.containsKey('errors')) {
+             // Handle ASP.NET Core Identity style errors
+            var errorsMap = decodedError['errors'] as Map<String, dynamic>;
+            if (errorsMap.isNotEmpty) {
+                var firstErrorKey = errorsMap.keys.first;
+                var errorMessages = errorsMap[firstErrorKey] as List<dynamic>;
+                if (errorMessages.isNotEmpty) {
+                    errorMessage = errorMessages.first.toString();
+                }
+            }
+          }
+        } catch (e) {
+          // Ignore if error body is not JSON or not in expected format
+        }
+        print(errorMessage);
+        throw Exception(errorMessage);
+      }
+      else {
+        print('Failed to create category: ${response.statusCode}');
+        throw Exception('Failed to create category. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('ApiService: Error creating category: $e');
+      throw Exception('Error creating category: $e');
     }
   }
 }
