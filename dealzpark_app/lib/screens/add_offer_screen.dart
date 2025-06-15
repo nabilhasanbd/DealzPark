@@ -36,8 +36,11 @@ class _AddOfferScreenState extends State<AddOfferScreen> {
     super.initState();
     _fetchShops();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final offerProvider = Provider.of<OfferProvider>(context, listen: false);
       setState(() {
+        // Use categoryNamesForDropdown which excludes "All"
+        // and is sourced from the API-fetched _allApiCategories
         _categoriesForDropdown = offerProvider.categoryNamesForDropdown;
         if (_categoriesForDropdown.isNotEmpty) {
           _selectedCategoryName = _categoriesForDropdown.first;

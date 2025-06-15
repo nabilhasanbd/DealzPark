@@ -104,74 +104,94 @@ class ApiService {
 
   Future<List<CategoryModel>> fetchCategories() async {
     final response = await http.get(Uri.parse('$baseUrl/Categories'));
-    print('ApiService: Fetching categories from URL: $baseUrl/Categories');
-    print('ApiService: Categories Response status: ${response.statusCode}');
-    print('ApiService: Categories Response body: ${response.body}');
-
     if (response.statusCode == 200) {
       List<dynamic> body = jsonDecode(response.body);
       List<CategoryModel> categories =
           body.map((dynamic item) => CategoryModel.fromJson(item)).toList();
       return categories;
     } else {
-      throw Exception('Failed to load categories: ${response.statusCode}');
+      print('Failed to load categories: ${response.statusCode} ${response.body}');
+      throw Exception('Failed to load categories');
     }
   }
 
   Future<CategoryModel> createCategory(String name) async {
-    final String url = '$baseUrl/Categories';
-    print('ApiService: Creating category at URL: $url with name: $name');
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8', // CORRECT CHARSET
-        },
-        body: jsonEncode(<String, String>{ // Ensure the body matches your DTO
-          'name': name,
-        }),
-      );
-
-      print('ApiService: Create Category Response Status: ${response.statusCode}');
-      print('ApiService: Create Category Response Body: ${response.body}');
-
-      if (response.statusCode == 201) { // 201 Created
-        // Assuming your API returns the created category object in the body
-        return CategoryModel.fromJson(jsonDecode(response.body));
-      } else if (response.statusCode == 400) {
-        // Try to parse error message if API provides one
-        String errorMessage = 'Failed to create category: Bad Request';
-        try {
-          var decodedError = jsonDecode(response.body);
-          if (decodedError is Map && decodedError.containsKey('message')) {
-            errorMessage = decodedError['message'];
-          } else if (decodedError is String) {
-            errorMessage = decodedError;
-          } else if (decodedError is Map && decodedError.containsKey('errors')) {
-             // Handle ASP.NET Core Identity style errors
-            var errorsMap = decodedError['errors'] as Map<String, dynamic>;
-            if (errorsMap.isNotEmpty) {
-                var firstErrorKey = errorsMap.keys.first;
-                var errorMessages = errorsMap[firstErrorKey] as List<dynamic>;
-                if (errorMessages.isNotEmpty) {
-                    errorMessage = errorMessages.first.toString();
-                }
-            }
-          }
-        } catch (e) {
-          // Ignore if error body is not JSON or not in expected format
+    final response = await http.post(
+      Uri.parse('$baseUrl/Categories'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'name': name}),
+    );
+    if (response.statusCode == 201) {
+      return CategoryModel.fromJson(jsonDecode(response.body));
+    } else {
+      String errorMessage = 'Failed to create category.';
+      try {
+        var decodedError = jsonDecode(response.body);
+         if (decodedError is String) {
+          errorMessage = decodedError;
+        } else if (decodedError is Map && decodedError.containsKey('message')) {
+          errorMessage = decodedError['message'];
+        } else if (decodedError is Map && decodedError.values.isNotEmpty && decodedError.values.first is List) {
+           // ASP.NET Core validation errors often come as a map of lists
+          errorMessage = (decodedError.values.first as List).first.toString();
+        } else if (response.body.isNotEmpty) {
+          errorMessage = response.body;
         }
-        print(errorMessage);
-        throw Exception(errorMessage);
-      }
-      else {
-        print('Failed to create category: ${response.statusCode}');
-        throw Exception('Failed to create category. Status code: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('ApiService: Error creating category: $e');
-      throw Exception('Error creating category: $e');
+      } catch (e) { /* Ignore parsing error, use default message */ }
+      print('Failed to create category: ${response.statusCode} - $errorMessage');
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<void> updateCategory(int id, String newName) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Categories/$id'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'name': newName}),
+    );
+    if (response.statusCode == 204) { // No Content for successful PUT
+      print('Category updated successfully');
+    } else {
+       String errorMessage = 'Failed to update category.';
+      try {
+        var decodedError = jsonDecode(response.body);
+        if (decodedError is String) {
+          errorMessage = decodedError;
+        } else if (decodedError is Map && decodedError.containsKey('message')) {
+          errorMessage = decodedError['message'];
+        } else if (decodedError is Map && decodedError.values.isNotEmpty && decodedError.values.first is List) {
+          errorMessage = (decodedError.values.first as List).first.toString();
+        } else if (response.body.isNotEmpty) {
+          errorMessage = response.body;
+        }
+      } catch (e) { /* Ignore */ }
+      print('Failed to update category: ${response.statusCode} - $errorMessage');
+      throw Exception(errorMessage);
+    }
+  }
+
+  Future<void> deleteCategory(int id) async {
+    final response = await http.delete(Uri.parse('$baseUrl/Categories/$id'));
+    if (response.statusCode == 204) { // No Content for successful DELETE
+      print('Category deleted successfully');
+    } else {
+      String errorMessage = 'Failed to delete category.';
+      try {
+        var decodedError = jsonDecode(response.body);
+         if (decodedError is String) {
+          errorMessage = decodedError;
+        } else if (decodedError is Map && decodedError.containsKey('message')) {
+          errorMessage = decodedError['message'];
+        } else if (response.body.isNotEmpty) {
+           errorMessage = response.body; // API might just return plain text for 400 error
+        }
+      } catch (e) { /* Ignore */ }
+      print('Failed to delete category: ${response.statusCode} - $errorMessage');
+      throw Exception(errorMessage);
     }
   }
 }

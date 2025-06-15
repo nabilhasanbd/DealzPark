@@ -36,11 +36,12 @@ class OfferProvider with ChangeNotifier {
   }
 
   Future<void> initializeData() async {
-    await fetchAllCategories();
+    await fetchAllCategoriesFromApi();
     await loadOffers(category: _selectedCategoryName);
   }
 
-  Future<void> fetchAllCategories() async {
+//TODO
+  Future<void> fetchAllCategoriesFromApi() async {
     _isLoadingCategories = true;
     notifyListeners();
     try {
@@ -57,10 +58,46 @@ class OfferProvider with ChangeNotifier {
   Future<void> addCategory(String name) async {
     try {
       await _apiService.createCategory(name);
-      await fetchAllCategories();
+      await fetchAllCategoriesFromApi();
     } catch (e) {
       print("Error adding category: $e");
       throw e;
+    }
+  }
+
+  Future<void> addCategoryToApi(String name) async {
+    // Optional: Add optimistic update here if desired
+    try {
+      await _apiService.createCategory(name);
+      await fetchAllCategoriesFromApi(); // Refresh the list from API
+    } catch (e) {
+      print("OfferProvider - Error adding category: $e");
+      rethrow; // Rethrow to be caught by UI for user feedback
+    }
+  }
+
+  Future<void> editCategoryInApi(int categoryId, String newName) async {
+    try {
+      await _apiService.updateCategory(categoryId, newName);
+      await fetchAllCategoriesFromApi(); // Refresh
+    } catch (e) {
+      print("OfferProvider - Error editing category: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deleteCategoryFromApi(int categoryId) async {
+    try {
+      await _apiService.deleteCategory(categoryId);
+      // If the deleted category was the selected one, reset selection to 'All'
+      if (_allApiCategories.any((c) => c.id == categoryId && c.name == _selectedCategoryName)) {
+          _selectedCategoryName = 'All';
+      }
+      await fetchAllCategoriesFromApi(); // Refresh
+      await loadOffers(category: _selectedCategoryName); // Reload offers based on potentially new selection
+    } catch (e) {
+      print("OfferProvider - Error deleting category: $e");
+      rethrow;
     }
   }
 
